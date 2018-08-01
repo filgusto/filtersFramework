@@ -12,8 +12,6 @@ classdef classeManipulacaoVREP
         
         handle_motor = zeros(1,4);
         handle_robo = 0;
-        
-        
     end
     
     %% Metodos da classe
@@ -37,7 +35,7 @@ classdef classeManipulacaoVREP
                 disp('A conexao com o VREP nao pode ser estabelecida');
                 disp('Verifique se a simulacao esta funcionando e o remoteAPI foi inicializado corretamente no modelo');
                 disp(' ');
-                disp('Interrompendo a execucao');
+                error('Interrompendo a execucao: V-REP não encontrado.');
                 return;
             else
                 disp('V-REP: >> Conexao realizada com sucesso!');

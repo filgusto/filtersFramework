@@ -1,6 +1,9 @@
-% Codigo 01 para conexao com o VREP e LIZA
+% Codigo para a utilização de filtros em uma plataforma robótica movel no
+% plano
 % Filipe Rocha
-% julho de 2018
+% f.rocha41@gmail.com
+% COPPE/UFRJ
+% agosto de 2018
 clear all;
 close all;
 clc;
@@ -13,7 +16,6 @@ clc;
 %   3 - Comparacao geral de todos os filtros e erro absoluto de posicao
 tipo_plot = 3;
 
-
 %% Instanciacao de objetos
 
 % Cria um objeto para a comunicacao com o V-REP
@@ -21,6 +23,7 @@ vrepComm = classeManipulacaoVREP;
 
 % Cria um objeto de Filtros
 filtros = classeFiltrosAutonomos;
+
  
 %% Inicio do tratamento
 

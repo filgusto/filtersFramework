@@ -201,22 +201,23 @@ classdef classeFiltrosAutonomos
             % -- Etapa de Predicao ---
             
             % Calculo da media predita
-            aux = 0;
+            m_nn1 = 0;
             for i=0:2*n
-               aux = aux + (w(i+1) * sigmaPoints_nHat(:,i+1));
+               m_nn1 = m_nn1 + (w(i+1) * sigmaPoints_nHat(:,i+1));
             end         
-            m_nn1 = aux;
             
             % Calculo da Covariancia predita
-            aux = 0;
+            P_nn1 = 0;
             for i=0:2*n
-                aux = aux + ((w(i+1) * (sigmaPoints_nHat(:,i+1) - m_nn1(:,1)) * (sigmaPoints_nHat(:,i+1) - m_nn1(:,1)).'));
+                P_nn1 = P_nn1 + ((w(i+1) * (sigmaPoints_nHat(:,i+1) - m_nn1(:,1)) * (sigmaPoints_nHat(:,i+1) - m_nn1(:,1)).'));
             end
-            P_nn1 = aux + obj.ukf_R_t;
+            
+            % Soma a incerteza a covariancia
+            P_nn1 = P_nn1 + obj.ukf_R_t;
             
             % Atualizando os sigmapoints com a media e matriz de
             % covariancia preditas
-            %sigmaPoints_n1 = [m_nn1, (m_nn1 + obj.ukf_lambda*sqrt(abs(P_nn1))), (m_n1 - obj.ukf_lambda*sqrt(abs(P_nn1)))];
+            sigmaPoints_n1 = [m_nn1, (m_nn1 + obj.ukf_lambda*sqrtm(P_nn1)), (m_n1 - obj.ukf_lambda*sqrtm(P_nn1))];
             
             % --- Etapa de atualizacao ----
             
@@ -226,32 +227,33 @@ classdef classeFiltrosAutonomos
             end
             
             % Calculo da media no espaço de medicao
-            aux = 0;
+            z_hat = 0;
             for i=0:2*n
-                aux = aux + (w(i+1) * Z(1:3,i+1));
+                z_hat = z_hat + (w(i+1) * Z(1:3,i+1));
             end
-            z_hat = aux;
             
             % Covariancia no estado de medicao
-            aux = 0;
+            S = 0;
             for i=0:2*n
-               aux = aux + ( (w(i+1) * (Z(1:3,i+1) - z_hat) * (Z(1:3,i+1) - z_hat).'));               
+               S = S + ( (w(i+1) * (Z(1:3,i+1) - z_hat) * (Z(1:3,i+1) - z_hat).'));               
             end
-            S = aux + obj.ukf_Q_t;
+            
+            % Adicionando a incerteza a variancia no espaco de medicao
+            S = S + obj.ukf_Q_t;
             
             % --- CAlculando o ganho de Kalman
             
             % Correlacao cruzada entre os sigmapoints e o espaco de medicao
-            aux = 0;
+            T = 0;
             for i=0:2*n
-               aux = aux + (  w(i+1) * (sigmaPoints_n1(1:4,i+1) - m_nn1) * (Z(1:3,i+1) - z_hat).' ) ; 
+               T = T + (  w(i+1) * (sigmaPoints_n1(1:4,i+1) - m_nn1) * (Z(1:3,i+1) - z_hat).' ); 
             end
-            T = aux;
             
             % Ganho de Kalman
             K = T * S^-1;
             
-            % Calculando a media e matriz de covariancia calculadas
+            % Calculando a media e matriz de covariancia do filtro pelo
+            % ganho de Kalman
             m_n = m_nn1 + K * (y_n - z_hat);
             P_n = P_nn1 - (K * S * K.');
 
