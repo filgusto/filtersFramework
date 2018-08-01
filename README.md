@@ -43,7 +43,7 @@ Caso queira se aventurar e fazer mais interações com o V-REP a partir do MATLA
 
 e-mail: f.rocha41@gmail.com.
 
-* Compartilhar é crescer mais rápido. *
+*Compartilhar é crescer mais rápido.*
 Espero que este arcabouço contribua no aprendizado dos conceitos da disciplina. :)
 
 
