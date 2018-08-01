@@ -41,7 +41,7 @@ Caso queira se aventurar e fazer mais interações com o V-REP a partir do MATLA
 
 ## Contato
 
-Caso tenha alguma dúvida, pode entrar em contato no f.rocha41@gmail.com
+e-mail: f.rocha41@gmail.com.
 
 Espero que este arcabouço contribua no aprendizado dos conceitos da disciplina. :)
 
