@@ -4,6 +4,8 @@ Repositório contendo o arcabouço para desenvolvimento dos trabalhos da discipl
 
 (COE841 - COPPE - UFRJ). Professor Ramon Romankevicius
 
+Demonstração do funcionamento [neste vídeo](https://youtu.be/vqlOiuc-Fu0)
+
 autor: Filipe Rocha
 
 ## Descrição dos arquivos contidos neste repositório
