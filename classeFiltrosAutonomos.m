@@ -32,6 +32,24 @@ classdef classeFiltrosAutonomos
         ukf_desv_y = [];
         ukf_R_t = [];
         ukf_Q_t = [];
+        
+        %% Parametros do filtro de PARTICULAS
+        
+        % Covariancia no sistema
+        fp_desv_x = 0.5;
+        
+        % Covariancia na medida
+        fp_desv_y = 0.5;
+        
+        % Numero de particulas
+        fp_M = 100;
+        
+        % Variancia do estado inicial
+        fp_V = 3;
+        
+        % Matriz de covariancia do sistema
+        fp_R_t = eye(3);        
+        
                
     end
     
@@ -65,6 +83,10 @@ classdef classeFiltrosAutonomos
             % Matriz de incerteza da medicao
             obj.ukf_Q_t = obj.ukf_desv_y * eye(3);
             
+            %% Inicializacoes do filtro de Particulas
+            
+            % Matriz de incerteza do sistema
+            obj.fp_R_t = obj.fp_desv_x * eye(3);
             
             %% Finalizacoes do construtor
             
@@ -136,7 +158,7 @@ classdef classeFiltrosAutonomos
             y_n = feval(@obj.ekf_h, x_n) + w_n;
         end
         
-        % Funcao de transicao de estado para o caso do ekf
+        % ----- Funcao de transicao de estado para o caso do ekf
         function x_n = ekf_f(obj, x_n1, deltT)
             x_n = [x_n1(1) + x_n1(3)*deltT;
                 x_n1(2) + x_n1(4)*deltT;
@@ -145,7 +167,7 @@ classdef classeFiltrosAutonomos
                 ];
         end
         
-        % Funcao de medicao para o caso do ekf
+        %-------- Funcao de medicao para o caso do ekf
         function y_n = ekf_h(obj, x_n1)            
             y_n = [  sqrt(x_n1(1)^2 + x_n1(2)^2);
                     (x_n1(1)*x_n1(3) + x_n1(2)*x_n1(4)) / sqrt(x_n1(1)^2 + x_n1(2)^2);
@@ -154,7 +176,7 @@ classdef classeFiltrosAutonomos
                 ];
         end
         
-        % Funcao que cria a jacobiana de H dado um estado m_n
+        %-------- Funcao que cria a jacobiana de H dado um estado m_n
         function H_t = ekf_jacH(obj, m_n)
             
             % Separando o vetor de estados de entrada
@@ -241,7 +263,7 @@ classdef classeFiltrosAutonomos
             % Adicionando a incerteza a variancia no espaco de medicao
             S = S + obj.ukf_Q_t;
             
-            % --- CAlculando o ganho de Kalman
+            % - CAlculando o ganho de Kalman
             
             % Correlacao cruzada entre os sigmapoints e o espaco de medicao
             T = 0;
@@ -260,11 +282,113 @@ classdef classeFiltrosAutonomos
         end
         
         %% Filtro de particulas
-        function a = particulas(obj, b)
-            b;
+        %
+        % metodo_resample - 1- simples ; 2- low variance
+        % function [m_n, P_n] = ukf(obj, m_n1, P_n1, y_n, deltaT)
+        function xCal_n = fp(obj, xCal_n1, u_n, y_n, deltaT, metodoResample)
+           	            
+            % Fase de predicao
+            for m=1:obj.fp_M
+                %feval(@obj.ekf_f, m_n1, deltaT);
+                % Atualiza o estado de cada particula baseado no modelo do
+                % sistema e a incerteza
+                xCal_nHat(1:4,m) = feval(@obj.ekf_f,xCal_n1(1:4,m), deltaT) + sqrt(obj.fp_desv_x)*randn(4,1);               
+                
+                % Atualiza a medicao para cada particula calculada
+                y_nHat(1:3,m) = feval(@obj.ekf_h,xCal_nHat(1:4,m));
+                
+                % Calcula o peso de cada particula
+                % atraves da equacao da gaussiana
+                W(:,m) = (1 / sqrt(det(obj.fp_R_t)*(2*pi)^length(y_n(:,1)))) * exp(-0.5 * (y_n' - y_nHat(:,m)') * obj.fp_R_t^-1 * (y_n' - y_nHat(:,m)')');
+                
+            end
+            
+            % Normalizando os pesos
+            W = W ./ sum(W);
+            
+            % Faz o resample baseado em um metodo pre-definido
+            switch metodoResample               
+                % Resample uniforme
+                case 1
+                    xCal_n = obj.fp_resampleUniforme(xCal_nHat, W);    
+                % Resample de baixa variancia
+                case 2
+                    xCal_n = obj.fp_resampleLowVariance(xCal_nHat, W);
+            end
+
+            
         end
         
-        %% Funcao para criar a TH a partir dos angulos de Euler
+        % --- Geracao das particulas iniciais
+        function xCal = fp_estInicial(obj, x_ini)
+            
+            % Gerando as particulas iniciais baseado em uma distribuicao
+            % gaussiana no entorno da priori inicial
+            x_estIni = [];
+            for i=1:obj.fp_M
+                
+                % Gera uma inicializacao para cada dimensao de x_ini
+                for i2 = 1:length(x_ini(:,1))
+                    xCal(i2,i) = x_ini(i2,1) + sqrt(obj.fp_V) * randn;
+                end
+            end             
+        end
+        
+        % --- Metodo para calcular a media do FP a partir das particulas
+        % Obtencao da previsao do filtro de particulas a partir da
+        % informacao das particulas utilizando de uma metrica (no caso,
+        % media)
+        function m_n = fp_obter_m_n(obj, xCal_n)
+            
+            % Calcula a media de todos os elementos das particulas
+            m_n = mean(xCal_n,2);
+            
+        end
+            
+       % --- Metodo de Resample uniforme para o FP
+       function xCal_n = fp_resampleUniforme(obj, xCal_nHat, W)
+           
+           % Faz o resample
+           for m=1:obj.fp_M
+                xCal_n(:,m) = xCal_nHat(:,find(rand <= cumsum(W),1));
+           end
+            
+       end
+       
+       % ---- Metodo de Resample low variance para o FP
+       % MEtodo extraido do Livro Probabilistic Robots, Sebastian Thrun
+       % Pg. 86
+       function xCal_n = fp_resampleLowVariance(obj, xCaln_nHAt, W)
+           
+           % Gerando um numero aleatorio no intervalo [0,M[
+           r = (rand(4,1) * obj.fp_M^-1);
+           
+           % Amostra um dos pesos
+           c = W(1);
+           
+           i=1;
+           for m=1:obj.fp_M
+               u = r + (m-1) * obj.fp_M^-1;
+               
+               while u > c
+                   i = i+1;
+                   c = c + W(i);
+               end
+               
+               % Adicionando a particula ao conjunto final
+               xCal_n(1:4,m) = xCaln_nHAt(1:4,i);            
+           end 
+       end
+       
+       %% Filtro discreto de Bayes
+       function pk_t = db(obj, pk_t1, ut, zt)
+           
+          
+         pk_t = [];
+       end
+            
+        
+        %% ======= Funcao para criar a TH a partir dos angulos de Euler ============
         function a = toTH(b)
             
             %

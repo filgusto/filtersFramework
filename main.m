@@ -14,7 +14,7 @@ clc;
 %   1 - Demonstracao do filtro simples
 %   2 - Erro por parametro de cada filtro
 %   3 - Comparacao geral de todos os filtros e erro absoluto de posicao
-tipo_plot = 3;
+tipo_plot = 4;
 
 %% Instanciacao de objetos
 
@@ -53,7 +53,7 @@ disp('Iniciado o loop');
      %% ======= PRE TRATAMENTO =================
      
      % Pequeno pause
-     pause(0.01);  
+     pause(0.05);  
     
      % Obtendo os dados necessarios da simulacao
      [eul_ang, p_mundo_robo, vel, tempo_atual] = vrepComm.obterDadosSim;
@@ -65,6 +65,7 @@ disp('Iniciado o loop');
          
      % Salvando o tempo atual do calculo
      base_tempo(aux_i) = tempo_atual - tempo_first;
+     disp(strcat('Tempo de simulacao: ',num2str(base_tempo(aux_i))));
      
      % Atribuindo o vetor com as leituras reais o V-REP
      x_n(1:4, aux_i) = [p_mundo_robo(1), p_mundo_robo(2) vel(1) vel(2)]';
@@ -140,19 +141,57 @@ disp('Iniciado o loop');
          
      end
      
+     %% Tratamento para a utilizacao do filtro de PARTICULAS
+     
+     % Inicializacao dos parametros para o FP
+     % O filtro de particulas é calculado para as duas situacoes de
+     % resample requisitadas
+     if flag_first_read
+        
+          % Inicia as particulas com media baseada na posicao atual real do
+          % robo
+          fp1_xCal(:,:,aux_i) = filtros.fp_estInicial(x_n(1:4, aux_i));
+          fp2_xCal(:,:,aux_i) = filtros.fp_estInicial(x_n(1:4, aux_i));
+          
+          % Inicializa a primeira predicao do filtro de particulas como a
+          % posicao real do robo
+          fp1_m_n(:,aux_i) = x_n(1:4, aux_i);
+          fp2_m_n(:,aux_i) = x_n(1:4, aux_i);
+         
+     % Quando nao eh a primeira execucao
+     else
+         
+         % Invoca o filtro de particulas com metodo de resample uniforme
+         fp1_xCal = filtros.fp(fp1_xCal, [], ekf_y_n(1:3, aux_i), deltaT, 1);
+         
+         % Invoca o filtro de particulas com o metodo de resample low
+         % variance
+         fp2_xCal = filtros.fp(fp2_xCal, [], ekf_y_n(1:3, aux_i), deltaT, 2);
+         
+         % Obtem a previsao do filtro de particulas a partir da metrica de
+         % media das particulas
+         fp1_m_n(:, aux_i) = filtros.fp_obter_m_n(fp1_xCal);
+         fp2_m_n(:, aux_i) = filtros.fp_obter_m_n(fp2_xCal);
+         
+     end
+     
      %% ====== POS TRATAMENTO ========================
      
      %% Calculo do erro dos filtros
      
-     % Erros dos parametros 
+     % Erros dos parametros   
      geral_erroKF(1:4, aux_i) = abs(x_n(1:4,aux_i) - kf_m_n(1:4,aux_i));
-     geral_erroEKF(1:4, aux_i) =  abs(x_n(1:4,aux_i) - ekf_m_n(1:4,aux_i));    
+     geral_erroEKF(1:4, aux_i) =  abs(x_n(1:4,aux_i) - ekf_m_n(1:4,aux_i));
      geral_erroUKF(1:4, aux_i) =  abs(x_n(1:4,aux_i) - ukf_m_n(1:4,aux_i));
-    
+     geral_erroFP1(1:4, aux_i) = abs(x_n(1:4,aux_i) - fp1_m_n(1:4,aux_i));
+     geral_erroFP2(1:4, aux_i) = abs(x_n(1:4,aux_i) - fp2_m_n(1:4,aux_i));
+     
      % Erro absoluto de posicao
-      geral_erroKF_pos(aux_i) = sqrt((x_n(1,aux_i)- kf_m_n(1,aux_i))^2 + (x_n(2,aux_i)- kf_m_n(2,aux_i))^2);
-      geral_erroEKF_pos(aux_i) = sqrt((x_n(1,aux_i)- ekf_m_n(1,aux_i))^2 + (x_n(2,aux_i)- ekf_m_n(2,aux_i))^2);
-      geral_erroUKF_pos(aux_i) = sqrt((x_n(1,aux_i)- ukf_m_n(1,aux_i))^2 + (x_n(2,aux_i)- ukf_m_n(2,aux_i))^2);
+     geral_erroKF_pos(aux_i) = sqrt((x_n(1,aux_i)- kf_m_n(1,aux_i))^2 + (x_n(2,aux_i)- kf_m_n(2,aux_i))^2);
+     geral_erroEKF_pos(aux_i) = sqrt((x_n(1,aux_i)- ekf_m_n(1,aux_i))^2 + (x_n(2,aux_i)- ekf_m_n(2,aux_i))^2);
+     geral_erroUKF_pos(aux_i) = sqrt((x_n(1,aux_i)- ukf_m_n(1,aux_i))^2 + (x_n(2,aux_i)- ukf_m_n(2,aux_i))^2);
+     geral_erroFP1_pos(aux_i) = sqrt((x_n(1,aux_i)- fp1_m_n(1,aux_i))^2 + (x_n(2,aux_i)- fp1_m_n(2,aux_i))^2);
+     geral_erroFP2_pos(aux_i) = sqrt((x_n(1,aux_i)- fp2_m_n(1,aux_i))^2 + (x_n(2,aux_i)- fp2_m_n(2,aux_i))^2);
      
      %% Atualizando os graficos
      
@@ -165,7 +204,7 @@ disp('Iniciado o loop');
              case 1
                  
                  plot(0, 0, 'dk');
-                 plot([x_n(1,num_leit) x_n(1,num_leit-1)], [x_n(2,num_leit) x_n(2,num_leit-1)],'--g');
+                 plot([x_n(1,num_leit) x_n(1,num_leit-1)], [x_n(2,num_leit) x_n(2,num_leit-1)],'--k');
                  plot([kf_y_n(1,num_leit) kf_y_n(1,num_leit-1)], [kf_y_n(2,num_leit) kf_y_n(2,num_leit-1)],'-r');
                  plot([kf_m_n(1,num_leit) kf_m_n(1,num_leit-1)], [kf_m_n(2,num_leit) kf_m_n(2,num_leit-1)],'-b');
                  
@@ -177,35 +216,42 @@ disp('Iniciado o loop');
                  % Plota o erro em xd
                  subplot(4,1,1);
                  hold on;
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(1,aux_i-1) geral_erroKF(1,aux_i)],'-b');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(1,aux_i-1) geral_erroEKF(1,aux_i)],'-g');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(1,aux_i-1) geral_erroUKF(1,aux_i)],'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(1,aux_i-1) geral_erroKF(1,aux_i)],'-g');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(1,aux_i-1) geral_erroEKF(1,aux_i)],'-r');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(1,aux_i-1) geral_erroUKF(1,aux_i)],'-b');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP1(1,aux_i-1) geral_erroFP1(1,aux_i)],'-c');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2(1,aux_i-1) geral_erroFP2(1,aux_i)],'-y');
+                 legend('Erro KF', 'Erro EKF', 'Erro UKF', 'Erro FP1', 'Erro FP2');
                  
              % Plota o erro absoluto em y
                  subplot(4,1,2);
                  hold on;
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(2,aux_i-1) geral_erroKF(2,aux_i)],'-b');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(2,aux_i-1) geral_erroEKF(2,aux_i)],'-g');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(2,aux_i-1) geral_erroUKF(2,aux_i)],'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(2,aux_i-1) geral_erroKF(2,aux_i)],'-g');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(2,aux_i-1) geral_erroEKF(2,aux_i)],'-r');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(2,aux_i-1) geral_erroUKF(2,aux_i)],'-b');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP1(2,aux_i-1) geral_erroFP1(2,aux_i)],'-c');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2(2,aux_i-1) geral_erroFP2(2,aux_i)],'-y');
+                 legend('Erro KF', 'Erro EKF', 'Erro UKF', 'Erro FP1', 'Erro FP2');
                
              % Plota o erro absoluto em xd    
                  subplot(4,1,3);
                  hold on;
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(3,aux_i-1) geral_erroKF(3,aux_i)],'-b');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(3,aux_i-1) geral_erroEKF(3,aux_i)],'-g');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(3,aux_i-1) geral_erroUKF(3,aux_i)],'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(3,aux_i-1) geral_erroKF(3,aux_i)],'-g');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(3,aux_i-1) geral_erroEKF(3,aux_i)],'-r');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(3,aux_i-1) geral_erroUKF(3,aux_i)],'-b');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP1(3,aux_i-1) geral_erroFP1(3,aux_i)],'-c');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2(3,aux_i-1) geral_erroFP2(3,aux_i)],'-y');
+                 legend('Erro KF', 'Erro EKF', 'Erro UKF', 'Erro FP1', 'Erro FP2');
                  
              % Plota o erro absoludo em yd  
                  subplot(4,1,4);
                  hold on;
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(4,aux_i-1) geral_erroKF(4,aux_i)],'-b');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(4,aux_i-1) geral_erroEKF(4,aux_i)],'-g');
-                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(4,aux_i-1) geral_erroUKF(4,aux_i)],'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
-
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF(4,aux_i-1) geral_erroKF(4,aux_i)],'-g');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(4,aux_i-1) geral_erroEKF(4,aux_i)],'-r');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(4,aux_i-1) geral_erroUKF(4,aux_i)],'-b');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP1(4,aux_i-1) geral_erroFP1(4,aux_i)],'-c');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2(4,aux_i-1) geral_erroFP2(4,aux_i)],'-y');
+                 legend('Erro KF', 'Erro EKF', 'Erro UKF', 'Erro FP1', 'Erro FP2');
                  
              % Plota todos os filtros e o erro absoluto
              case 3
@@ -218,7 +264,9 @@ disp('Iniciado o loop');
                  plot([ekf_m_n(1,num_leit) kf_m_n(1,num_leit-1)], [kf_m_n(2,num_leit) kf_m_n(2,num_leit-1)],'-g');
                  plot([ekf_m_n(1,num_leit) ekf_m_n(1,num_leit-1)], [ekf_m_n(2,num_leit) ekf_m_n(2,num_leit-1)],'-r');
                  plot([ukf_m_n(1,num_leit) ukf_m_n(1,num_leit-1)], [ukf_m_n(2,num_leit) ukf_m_n(2,num_leit-1)],'-b');
-                 legend('Origem', 'Pos. Real','KF','EKF','UKF');
+                 plot([fp1_m_n(1,num_leit) fp1_m_n(1,num_leit-1)], [fp1_m_n(2,num_leit) fp1_m_n(2,num_leit-1)],'-c');
+                 plot([fp2_m_n(1,num_leit) fp2_m_n(1,num_leit-1)], [fp2_m_n(2,num_leit) fp2_m_n(2,num_leit-1)],'-y');
+                 legend('Origem', 'Pos. Real','KF','EKF','UKF','FP1','FP2');
                  hold off;
                  
                  % Plotando os erros
@@ -227,8 +275,39 @@ disp('Iniciado o loop');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroKF_pos(aux_i-1) geral_erroKF_pos(aux_i)],'-g');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF_pos(aux_i-1) geral_erroEKF_pos(aux_i)],'-r');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF_pos(aux_i-1) geral_erroUKF_pos(aux_i)],'-b');
-                 legend('KF','EKF','UFK');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP1_pos(aux_i-1) geral_erroFP1_pos(aux_i)],'-c');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2_pos(aux_i-1) geral_erroFP2_pos(aux_i)],'-y');
+                 legend('KF','EKF','UFK', 'FP1', 'FP2');
                  hold off;
+                 
+             % Plotando os filtros de particulas
+             case 4
+                 
+                  % Plotando o resultado para o filtro de particulas
+                  %plot([x_n(1,num_leit) x_n(1,num_leit-1)], [x_n(2,num_leit) x_n(2,num_leit-1)],'--g');
+                  
+                  % Plota o filtro de particulas com o primeiro metodo de
+                  % resample
+                  subplot(2,1,1);
+                 
+                  hold on;
+                  plot(x_n(1,num_leit), x_n(2, num_leit), 'ob');
+                  plot(fp1_m_n(1,num_leit), fp1_m_n(2,num_leit), 'or');
+                  plot(fp1_xCal(1,:), fp1_xCal(2,:),'xk');
+                  %pbaspect([1 1 1]);
+                  hold off;
+                  axis([-10 10 -10 10]);
+                  
+                  % Plota o filtro de particulas com o segundo metodo de
+                  % resample
+                  subplot(2,1,2);
+                  hold on;
+                  plot(x_n(1,num_leit), x_n(2, num_leit), 'ob');
+                  plot(fp2_m_n(1,num_leit), fp2_m_n(2,num_leit), 'or');
+                  plot(fp2_xCal(1,:), fp2_xCal(2,:),'xk');
+                  hold off;
+                  %pbaspect([1 1 1]);
+                  axis([-10 10 -10 10]);
       
              otherwise
                  
@@ -246,40 +325,21 @@ disp('Iniciado o loop');
                  % Plota o erro em xd
                  subplot(4,1,1);
                  hold on;
-                 plot(0,0,'-b');
-                 plot(0,0,'-g');
-                 plot(0,0,'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
                  title('Erro absoluto em x');
                  xlabel('tempo [s]'); ylabel('erro [m]');
                  
              % Plota o erro absoluto em y
                  subplot(4,1,2);
-                 hold on;
-                 plot(0,0,'-b');
-                 plot(0,0,'-g');
-                 plot(0,0,'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
                  title('Erro absoluto em y');
                  xlabel('tempo [s]'); ylabel('erro [m]');
                
              % Plota o erro absoluto em xd    
                  subplot(4,1,3);
-                 hold on;
-                 plot(0,0,'-b');
-                 plot(0,0,'-g');
-                 plot(0,0,'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
                  title('Erro absoluto em xd');
                  xlabel('tempo [s]'); ylabel('erro [m/s]');
                  
              % Plota o erro absoludo em yd  
                  subplot(4,1,4);
-                 hold on;
-                 plot(0,0,'-b');
-                 plot(0,0,'-g');
-                 plot(0,0,'-k');
-                 legend('Erro KF', 'Erro EKF', 'Erro UKF');
                  title('Erro absoluto em yd');
                  xlabel('tempo [s]'); ylabel('erro [m/s]');
              
@@ -288,13 +348,7 @@ disp('Iniciado o loop');
                  
                  % Trajetoria
                  subplot(2,1,1);
-                 hold on;
                  grid on;
-                 plot(0, 0, 'dk');
-                 plot(0, 0,'--k');
-                 plot(0, 0,'-g');
-                 plot(0, 0,'-r');
-                 plot(0, 0,'-b');
                  pbaspect([1 1 1]);
                  title('Comparacao KF, EKF e UKF');
                  xlabel('pos x [m]'); ylabel('pos y [m]');
@@ -302,15 +356,33 @@ disp('Iniciado o loop');
                  
                  % Plotando os erros
                  subplot(2,1,2);
-                 hold on;
                  grid on;
-                 plot(0, 0,'-g');
-                 plot(0, 0,'-r');
-                 plot(0, 0,'-b');
                  
                  title('Comp. Erro absoluto de Pos.');
                  xlabel('tempo [t]'); ylabel('erro absoluto [m]');
                  hold off;
+                 
+             % Inicializacao do grafico dos filtros de particulas
+             case 4
+                 
+                  % resample
+                  subplot(2,1,1);
+                  pbaspect([1 1 1]);
+                  axis([-10 10 -10 10]);
+                  title('Filtro de Particulas - Uniform');
+                  xlabel('pos x [m]'); ylabel('pos y [m]');
+                  
+                  % Plota o filtro de particulas com o segundo metodo de
+                  % resample
+                  subplot(2,1,2);
+                  pbaspect([1 1 1]);
+                  axis([-10 10 -10 10]);
+                  title('Filtro de Particulas - Low Variance');
+                  xlabel('pos x [m]'); ylabel('pos y [m]');
+                 
+             otherwise
+                 disp('Nenhum tipo de grafico selecionado');
+                 close all;       
                  
          % Fim do switch case
          end
