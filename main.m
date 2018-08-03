@@ -14,7 +14,9 @@ clc;
 %   1 - Demonstracao do filtro simples
 %   2 - Erro por parametro de cada filtro
 %   3 - Comparacao geral de todos os filtros e erro absoluto de posicao
-tipo_plot = 4;
+%   4 - Filtro de particulas
+%   5 - Filtro de Bayes
+tipo_plot = 3;
 
 %% Instanciacao de objetos
 
@@ -175,6 +177,34 @@ disp('Iniciado o loop');
          
      end
      
+     %% Tratamento para a utilizacao do filtro de bayes
+     
+     % Executa a inicializacao do filtro de bayes
+     if flag_first_read
+         
+         % Gera o inicializador do filtro de Bayes
+         %fb_Pk_n = filtros.fb_inicializacao();    
+         
+         % Encontra a predicao do filtro de Bayes para o mapa inicial
+         % fb_X_n = filtros.fb_obter_m_n(fb_Pk_n);
+         fb_m_n(:,aux_i) = x_n(1:2, aux_i);
+          
+     % Chamada recursiva da funcao do filtro
+     else
+         
+         % Gera os pontos em torno da medicao
+         fb_xP = filtros.fb_gerarPontos(kf_y_n(1:2,aux_i));
+         
+         % Chama o filtro de Bayes
+         fb_Pk_n = filtros.fb(fb_xP);
+         
+         % De acordo com o mapa gerado pelo filtro de Bayes, encontra sua
+         % predicao do estado do robo
+         fb_m_n(:,aux_i) = filtros.fb_obter_m_n(fb_Pk_n);
+               
+     end
+     
+     
      %% ====== POS TRATAMENTO ========================
      
      %% Calculo do erro dos filtros
@@ -192,6 +222,7 @@ disp('Iniciado o loop');
      geral_erroUKF_pos(aux_i) = sqrt((x_n(1,aux_i)- ukf_m_n(1,aux_i))^2 + (x_n(2,aux_i)- ukf_m_n(2,aux_i))^2);
      geral_erroFP1_pos(aux_i) = sqrt((x_n(1,aux_i)- fp1_m_n(1,aux_i))^2 + (x_n(2,aux_i)- fp1_m_n(2,aux_i))^2);
      geral_erroFP2_pos(aux_i) = sqrt((x_n(1,aux_i)- fp2_m_n(1,aux_i))^2 + (x_n(2,aux_i)- fp2_m_n(2,aux_i))^2);
+     geral_erroFB_pos(aux_i) = sqrt((x_n(1,aux_i)- fb_m_n(1,aux_i))^2 + (x_n(2,aux_i)- fb_m_n(2,aux_i))^2);
      
      %% Atualizando os graficos
      
@@ -220,6 +251,7 @@ disp('Iniciado o loop');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroEKF(1,aux_i-1) geral_erroEKF(1,aux_i)],'-r');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF(1,aux_i-1) geral_erroUKF(1,aux_i)],'-b');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP1(1,aux_i-1) geral_erroFP1(1,aux_i)],'-c');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2(1,aux_i-1) geral_erroFP2(1,aux_i)],'-y');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2(1,aux_i-1) geral_erroFP2(1,aux_i)],'-y');
                  legend('Erro KF', 'Erro EKF', 'Erro UKF', 'Erro FP1', 'Erro FP2');
                  
@@ -260,13 +292,16 @@ disp('Iniciado o loop');
                  
                  subplot(2,1,1);
                  hold on;
+                 plot(0,0,'dk');
                  plot([x_n(1,num_leit) x_n(1,num_leit-1)], [x_n(2,num_leit) x_n(2,num_leit-1)],'--k');
                  plot([ekf_m_n(1,num_leit) kf_m_n(1,num_leit-1)], [kf_m_n(2,num_leit) kf_m_n(2,num_leit-1)],'-g');
                  plot([ekf_m_n(1,num_leit) ekf_m_n(1,num_leit-1)], [ekf_m_n(2,num_leit) ekf_m_n(2,num_leit-1)],'-r');
                  plot([ukf_m_n(1,num_leit) ukf_m_n(1,num_leit-1)], [ukf_m_n(2,num_leit) ukf_m_n(2,num_leit-1)],'-b');
                  plot([fp1_m_n(1,num_leit) fp1_m_n(1,num_leit-1)], [fp1_m_n(2,num_leit) fp1_m_n(2,num_leit-1)],'-c');
                  plot([fp2_m_n(1,num_leit) fp2_m_n(1,num_leit-1)], [fp2_m_n(2,num_leit) fp2_m_n(2,num_leit-1)],'-y');
-                 legend('Origem', 'Pos. Real','KF','EKF','UKF','FP1','FP2');
+                 plot([fb_m_n(1,num_leit) fb_m_n(1,num_leit-1)], [fb_m_n(2,num_leit) fb_m_n(2,num_leit-1)],'-m');
+                 legend('Origem', 'Pos. Real','KF','EKF','UKF','FP1','FP2','FB');
+                 axis([-5 5 -5 5]);
                  hold off;
                  
                  % Plotando os erros
@@ -277,7 +312,8 @@ disp('Iniciado o loop');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroUKF_pos(aux_i-1) geral_erroUKF_pos(aux_i)],'-b');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP1_pos(aux_i-1) geral_erroFP1_pos(aux_i)],'-c');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2_pos(aux_i-1) geral_erroFP2_pos(aux_i)],'-y');
-                 legend('KF','EKF','UFK', 'FP1', 'FP2');
+                 plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFB_pos(aux_i-1) geral_erroFB_pos(aux_i)],'-m');
+                 legend('KF','EKF','UFK', 'FP1', 'FP2','FB');
                  hold off;
                  
              % Plotando os filtros de particulas
@@ -290,8 +326,8 @@ disp('Iniciado o loop');
                   % resample
                   subplot(2,1,1);
                  
-                  hold on;
                   plot(x_n(1,num_leit), x_n(2, num_leit), 'ob');
+                  hold on;
                   plot(fp1_m_n(1,num_leit), fp1_m_n(2,num_leit), 'or');
                   plot(fp1_xCal(1,:), fp1_xCal(2,:),'xk');
                   %pbaspect([1 1 1]);
@@ -301,17 +337,21 @@ disp('Iniciado o loop');
                   % Plota o filtro de particulas com o segundo metodo de
                   % resample
                   subplot(2,1,2);
-                  hold on;
                   plot(x_n(1,num_leit), x_n(2, num_leit), 'ob');
+                  hold on;
                   plot(fp2_m_n(1,num_leit), fp2_m_n(2,num_leit), 'or');
                   plot(fp2_xCal(1,:), fp2_xCal(2,:),'xk');
                   hold off;
                   %pbaspect([1 1 1]);
-                  axis([-10 10 -10 10]);
+                  axis([-5 5 -5 5]);
+                  
+             % Plotando para o filtro de Bayes
+             case 5
       
+                 mesh(fb_Pk_n);
+       
              otherwise
-                 
-            
+                           
          % Fim do switch case
          end
      

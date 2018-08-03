@@ -50,7 +50,23 @@ classdef classeFiltrosAutonomos
         % Matriz de covariancia do sistema
         fp_R_t = eye(3);        
         
-               
+        %% Parametros do filtro de Bayes discreto
+        
+        % Numero de pontos aproximados
+        fb_N = 20;
+        
+        % Desvio padrao da medicao
+        fb_desvBayes = 0.5;
+                
+        % Resolucao do Mapa
+        fb_resMapa = 0.2;
+        
+        % Mapa discreto
+        fb_Sx = [];
+        fb_Sy = [];
+        
+        % Matriz de covariancia para encontrar a posicao no plano
+        fb_K = [];
     end
     
     %% =========== Definicao dos metodos =========================
@@ -87,6 +103,15 @@ classdef classeFiltrosAutonomos
             
             % Matriz de incerteza do sistema
             obj.fp_R_t = obj.fp_desv_x * eye(3);
+            
+            %% Inicializacoes do filtro de Bayes
+            
+            % Inicializacao da matriz de covariancias
+            obj.fb_K = eye(2) * obj.fb_desvBayes^2;
+           
+           %-- Cria o mapa de possibilidades onde o robo possa estar
+           obj.fb_Sx = [-5:obj.fb_resMapa:5];
+           obj.fb_Sy = [-5:obj.fb_resMapa:5];
             
             %% Finalizacoes do construtor
             
@@ -381,13 +406,89 @@ classdef classeFiltrosAutonomos
        end
        
        %% Filtro discreto de Bayes
-       function pk_t = db(obj, pk_t1, ut, zt)
+       % ATENCAO: ATUALMENTE O FB ESTA IMPLEMENTADO PARA FILTRAR APENAS A
+       % POSICAO NO PLANO DO ROBO       
+       function Pk_n = fb(obj, fb_X_n)
            
-          
-         pk_t = [];
+           % Inicializacao do mapa
+           % Inicializa o mapa com uma uniforme
+           L = length(obj.fb_Sx);
+           Pk_n1 = ones(L,L);
+           
+           % Normaliza Pk_n para transformar em uma pdf valida
+           Pk_n1 = Pk_n1/sum(sum(Pk_n1));
+           
+           % Salva Pkn_1 em uma variavel iterativa auxiliar
+           Pr = Pk_n1;
+           
+           for n=2:length(fb_X_n)
+                              
+               % Inicializando o mapa discreto
+               mapa = 0 * Pr;
+               
+               % Itera o mapa para ajustar as probabilidades
+               for i=1:length(Pr)
+                   for j=1:length(Pr)
+                       
+                       % Acessa uma posicao do mapa
+                       mapa_ik = [obj.fb_Sx(i); obj.fb_Sy(j)];
+                       
+                       % Calcula a probabilidade de estar em cada ponto
+                       mapa(i,j) = 1/sqrt((2*pi)^2*det(obj.fb_K)) * exp(-(fb_X_n(:,n) - mapa_ik)' * inv(obj.fb_K) * (fb_X_n(:,n) - mapa_ik)/2);
+                       
+                       % Combina a probabilidade com a priori
+                       mapa(i,j) = mapa(i,j) * Pr(i,j);
+                   end
+               end
+               
+               % Gera o mapa a posteriori
+               Pk_n = mapa / sum(sum(mapa));
+               
+               % ==== DESCOMENTAR PARA MOSTRAR AS ETAPAS DE BAYES ====
+%                pause(0.1);
+%                mesh(Pk_n);
+               
+               % Salva o mapa a posteriori em um Priori auxiliar iterativo
+               Pr = Pk_n;            
+           end
+
        end
-            
-        
+       
+       % -- Metodo que encontra a predicao do filtro Bayes baseado nas
+       % probabilidades do mapa discreto
+       function m_n = fb_obter_m_n(obj, Pk_n)
+           
+            % Descobre os indices onde Pk_n atinge seu valor maximo
+           [x_best, y_best] = find(Pk_n == max(max(Pk_n)));
+           
+           % Resgata a melhor estimativa de onde possa estar o robo
+           m_n = [obj.fb_Sx(x_best); obj.fb_Sy(y_best)];
+           
+           % Tira uma media de m_n, caso tenham sido obtidos mais pontos
+           %m_n = mean(m_n);
+              
+       end
+       
+       %-- Metodo para gerar pontos a partir de uma leitura para o FB
+       function fb_xP = fb_gerarPontos(obj, y_n)
+                  
+           % Criando um vetor de pontos aleatorios uniformes
+           fb_nPoints = obj.fb_desvBayes * randn(2,obj.fb_N);
+           
+           % Inicializando o vetor de priori
+           fb_xP = zeros(2, obj.fb_N);
+           
+           % Centraliza a gaussiana a priori onde a leitura esta
+           for i=1:obj.fb_N
+               fb_xP(:,i) = y_n + fb_nPoints(:,i);
+           end
+           
+       end
+       
+       
+       
+       
+       
         %% ======= Funcao para criar a TH a partir dos angulos de Euler ============
         function a = toTH(b)
             
