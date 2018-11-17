@@ -1,30 +1,32 @@
-% Codigo para a utilização de filtros em uma plataforma robótica movel no
-% plano
-% Filipe Rocha
-% f.rocha41@gmail.com
-% COPPE/UFRJ
-% agosto de 2018
+% =========================================================================
+% =         Main file for the filtering demo
+% = 
+% =         Filipe Rocha - f.rocha41@gmail.com
+% = 
+% =         GSCAR - COPPE/UFRJ - Rio de Janeiro / Brasil
+% =         2018
+% =========================================================================
 clear all;
 close all;
 clc;
 
-%% Parametros da simulacao
+%% Simulation Parameters
 
-% Estilo do plot
+% Plot style
 %   1 - Demonstracao do filtro simples
 %   2 - Erro por parametro de cada filtro
-%   3 - Comparacao geral de todos os filtros e erro absoluto de posicao
+%   3 - Comparacao geral de todos os obj_filters e erro absoluto de posicao
 %   4 - Filtro de particulas
 %   5 - Filtro de Bayes
-tipo_plot = 3;
+conf_plotStyle = 4;
 
 %% Instanciacao de objetos
 
 % Cria um objeto para a comunicacao com o V-REP
-vrepComm = classeManipulacaoVREP;
+obj_vrepComm = class_vrep_manipulation;
 
-% Cria um objeto de Filtros
-filtros = classeFiltrosAutonomos;
+% Cria um objeto de obj_filters
+obj_filters = class_filters;
 
  
 %% Inicio do tratamento
@@ -40,12 +42,6 @@ flag_first_read = true;
 % Inicia o loop com aux_i = 2
 aux_i = 1;
 
-% Variaveis para o filtro de Kalman
-%base_tempo = [];
-%kf_P_n = [];
-%x_n = [];
-%y_n = [];
- 
 
 % Apenas um loop infinito
 disp('Iniciado o loop');
@@ -58,7 +54,7 @@ disp('Iniciado o loop');
      pause(0.05);  
     
      % Obtendo os dados necessarios da simulacao
-     [eul_ang, p_mundo_robo, vel, tempo_atual] = vrepComm.obterDadosSim;
+     [eul_ang, p_mundo_robo, vel, tempo_atual] = obj_vrepComm.obterDadosSim;
      
      %Primeiro tempo a ser lido
      if flag_first_read == 1
@@ -72,7 +68,7 @@ disp('Iniciado o loop');
      % Atribuindo o vetor com as leituras reais o V-REP
      x_n(1:4, aux_i) = [p_mundo_robo(1), p_mundo_robo(2) vel(1) vel(2)]';
      
-     % Tratando dados para os filtros
+     % Tratando dados para os obj_filters
      if flag_first_read
          
      else
@@ -80,12 +76,12 @@ disp('Iniciado o loop');
          deltaT = base_tempo(length(base_tempo)) - base_tempo(length(base_tempo)-1);
      end
      
-     %% ============ CALCULO DOS FILTROS ======================
+     %% ============ CALCULO DOS obj_filters ======================
          
      %% Tratamento para o filtro de Kalman Simples
      
      % Criando uma leitura com ruido 
-     kf_y_n(1:4, aux_i) = filtros.kf_adicionarRuidoLeitura(x_n(1:4, aux_i));
+     kf_y_n(1:4, aux_i) = obj_filters.kf_adicionarRuidoLeitura(x_n(1:4, aux_i));
      
      % Inicializa os parametros do filtro, caso seja o primeiro scan
      if flag_first_read
@@ -100,13 +96,13 @@ disp('Iniciado o loop');
      else
          
          % Chamando o filtro de Kalman
-         [kf_m_n(1:4,aux_i), kf_P_n(1:4,1:4,aux_i)] = filtros.kf(kf_m_n(1:4,aux_i-1), kf_P_n(1:4,1:4,aux_i-1), kf_y_n(1:4, aux_i), deltaT);
+         [kf_m_n(1:4,aux_i), kf_P_n(1:4,1:4,aux_i)] = obj_filters.kf(kf_m_n(1:4,aux_i-1), kf_P_n(1:4,1:4,aux_i-1), kf_y_n(1:4, aux_i), deltaT);
      end
      
      %% Tratamento para o filtro de Kalman EXTENDIDO
      
      % Criando uma leitura com ruido
-     ekf_y_n(1:3, aux_i) = filtros.ekf_adicionarRuidoLeitura(x_n(1:4, aux_i));
+     ekf_y_n(1:3, aux_i) = obj_filters.ekf_adicionarRuidoLeitura(x_n(1:4, aux_i));
      
      % Inicializa os parametros do filtro, caso seja o primeiro scan
      if flag_first_read
@@ -121,7 +117,7 @@ disp('Iniciado o loop');
      else
          
          % Chamando o filtro de Kalman Extendido
-         [ekf_m_n(1:4,aux_i), ekf_P_n(1:4,1:4,aux_i)] = filtros.ekf(ekf_m_n(1:4,aux_i-1), ekf_P_n(1:4,1:4,aux_i-1), ekf_y_n(1:3, aux_i), deltaT);
+         [ekf_m_n(1:4,aux_i), ekf_P_n(1:4,1:4,aux_i)] = obj_filters.ekf(ekf_m_n(1:4,aux_i-1), ekf_P_n(1:4,1:4,aux_i-1), ekf_y_n(1:3, aux_i), deltaT);
      end
      
      %% Tratamento para a utilizacao do filtro de Kalman UNSCENTED
@@ -139,7 +135,7 @@ disp('Iniciado o loop');
          
          % Chamando o filtro de Kalman Unscented
          % Note que a entrada de sensor utilizada eh a mesma para o EKF
-         [ukf_m_n(1:4,aux_i), ukf_P_n(1:4,1:4,aux_i)] = filtros.ukf(ukf_m_n(1:4,aux_i-1), ukf_P_n(1:4,1:4,aux_i-1), ekf_y_n(1:3, aux_i), deltaT);
+         [ukf_m_n(1:4,aux_i), ukf_P_n(1:4,1:4,aux_i)] = obj_filters.ukf(ukf_m_n(1:4,aux_i-1), ukf_P_n(1:4,1:4,aux_i-1), ekf_y_n(1:3, aux_i), deltaT);
          
      end
      
@@ -152,8 +148,8 @@ disp('Iniciado o loop');
         
           % Inicia as particulas com media baseada na posicao atual real do
           % robo
-          fp1_xCal(:,:,aux_i) = filtros.fp_estInicial(x_n(1:4, aux_i));
-          fp2_xCal(:,:,aux_i) = filtros.fp_estInicial(x_n(1:4, aux_i));
+          fp1_xCal(:,:,aux_i) = obj_filters.fp_estInicial(x_n(1:4, aux_i));
+          fp2_xCal(:,:,aux_i) = obj_filters.fp_estInicial(x_n(1:4, aux_i));
           
           % Inicializa a primeira predicao do filtro de particulas como a
           % posicao real do robo
@@ -164,16 +160,16 @@ disp('Iniciado o loop');
      else
          
          % Invoca o filtro de particulas com metodo de resample uniforme
-         fp1_xCal = filtros.fp(fp1_xCal, [], ekf_y_n(1:3, aux_i), deltaT, 1);
+         fp1_xCal = obj_filters.fp(fp1_xCal, [], ekf_y_n(1:3, aux_i), deltaT, 1);
          
          % Invoca o filtro de particulas com o metodo de resample low
          % variance
-         fp2_xCal = filtros.fp(fp2_xCal, [], ekf_y_n(1:3, aux_i), deltaT, 2);
+         fp2_xCal = obj_filters.fp(fp2_xCal, [], ekf_y_n(1:3, aux_i), deltaT, 2);
          
          % Obtem a previsao do filtro de particulas a partir da metrica de
          % media das particulas
-         fp1_m_n(:, aux_i) = filtros.fp_obter_m_n(fp1_xCal);
-         fp2_m_n(:, aux_i) = filtros.fp_obter_m_n(fp2_xCal);
+         fp1_m_n(:, aux_i) = obj_filters.fp_obter_m_n(fp1_xCal);
+         fp2_m_n(:, aux_i) = obj_filters.fp_obter_m_n(fp2_xCal);
          
      end
      
@@ -183,31 +179,31 @@ disp('Iniciado o loop');
      if flag_first_read
          
          % Gera o inicializador do filtro de Bayes
-         %fb_Pk_n = filtros.fb_inicializacao();    
+         %fb_Pk_n = obj_filters.fb_inicializacao();    
          
          % Encontra a predicao do filtro de Bayes para o mapa inicial
-         % fb_X_n = filtros.fb_obter_m_n(fb_Pk_n);
+         % fb_X_n = obj_filters.fb_obter_m_n(fb_Pk_n);
          fb_m_n(:,aux_i) = x_n(1:2, aux_i);
           
      % Chamada recursiva da funcao do filtro
      else
          
          % Gera os pontos em torno da medicao
-         fb_xP = filtros.fb_gerarPontos(kf_y_n(1:2,aux_i));
+         fb_xP = obj_filters.fb_gerarPontos(kf_y_n(1:2,aux_i));
          
          % Chama o filtro de Bayes
-         fb_Pk_n = filtros.fb(fb_xP);
+         fb_Pk_n = obj_filters.fb(fb_xP);
          
          % De acordo com o mapa gerado pelo filtro de Bayes, encontra sua
          % predicao do estado do robo
-         fb_m_n(:,aux_i) = filtros.fb_obter_m_n(fb_Pk_n);
+         fb_m_n(:,aux_i) = obj_filters.fb_obter_m_n(fb_Pk_n);
                
      end
      
      
      %% ====== POS TRATAMENTO ========================
      
-     %% Calculo do erro dos filtros
+     %% Calculo do erro dos obj_filters
      
      % Erros dos parametros   
      geral_erroKF(1:4, aux_i) = abs(x_n(1:4,aux_i) - kf_m_n(1:4,aux_i));
@@ -230,7 +226,7 @@ disp('Iniciado o loop');
          [~, num_leit] = size(x_n);
          
          % Switch que decide que tipo de plot sera printado
-         switch tipo_plot
+         switch conf_plotStyle
              % Demonstracao do KF
              case 1
                  
@@ -285,7 +281,7 @@ disp('Iniciado o loop');
                  plot([base_tempo(aux_i-1) base_tempo(aux_i)],[geral_erroFP2(4,aux_i-1) geral_erroFP2(4,aux_i)],'-y');
                  legend('Erro KF', 'Erro EKF', 'Erro UKF', 'Erro FP1', 'Erro FP2');
                  
-             % Plota todos os filtros e o erro absoluto
+             % Plota todos os obj_filters e o erro absoluto
              case 3
                  
                  % Plotando as trajetorias
@@ -316,7 +312,7 @@ disp('Iniciado o loop');
                  legend('KF','EKF','UFK', 'FP1', 'FP2','FB');
                  hold off;
                  
-             % Plotando os filtros de particulas
+             % Plotando os obj_filters de particulas
              case 4
                  
                   % Plotando o resultado para o filtro de particulas
@@ -357,7 +353,7 @@ disp('Iniciado o loop');
      
      % Caso seja o primeiro scan
      else
-         switch tipo_plot
+         switch conf_plotStyle
              
              % Inicializacao do grafico tipo 2
              case 2
@@ -402,7 +398,7 @@ disp('Iniciado o loop');
                  xlabel('tempo [t]'); ylabel('erro absoluto [m]');
                  hold off;
                  
-             % Inicializacao do grafico dos filtros de particulas
+             % Inicializacao do grafico dos obj_filters de particulas
              case 4
                  
                   % resample

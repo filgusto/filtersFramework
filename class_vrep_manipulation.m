@@ -1,4 +1,4 @@
-classdef classeManipulacaoVREP
+classdef class_vrep_manipulation
     % Classe que implementa diretamente as interacoes com o VREP
     
     %% Propriedades da Classe
@@ -18,7 +18,7 @@ classdef classeManipulacaoVREP
     methods
         
         %% Metodo construtor
-        function obj = classeManipulacaoVREP(obj)
+        function obj = class_vrep_manipulation(obj)
             
             % --Aviso para o usuario
             disp('--------------------------------------------');

@@ -1,4 +1,12 @@
-classdef classeFiltrosAutonomos
+% =========================================================================
+% =         Filters Class
+% = 
+% =         Filipe Rocha - f.rocha41@gmail.com
+% = 
+% =         GSCAR - COPPE/UFRJ - Rio de Janeiro / Brasil
+% =         2018
+% =========================================================================
+classdef class_filters
    % Classe para a definicao dos filtros do trabalho de autonomos
        
    %% Definicao das propriedades
@@ -73,7 +81,7 @@ classdef classeFiltrosAutonomos
     methods
         
         %% --- Construtor ---
-        function obj = classeFiltrosAutonomos(obj, estado_inicial, matriz_cov)
+        function obj = class_filters(obj, estado_inicial, matriz_cov)
             
             %% Inicializacoes do Filtro de Kalman Simples
             % Matriz de cov da medicao
@@ -484,10 +492,7 @@ classdef classeFiltrosAutonomos
            end
            
        end
-       
-       
-       
-       
+
        
         %% ======= Funcao para criar a TH a partir dos angulos de Euler ============
         function a = toTH(b)
