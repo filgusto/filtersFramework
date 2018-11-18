@@ -442,6 +442,7 @@ classdef class_filters
                        mapa_ik = [obj.fb_Sx(i); obj.fb_Sy(j)];
                        
                        % Calcula a probabilidade de estar em cada ponto
+                       %mapa(i,j) = 1/sqrt((2*pi)^2*det(obj.fb_K)) * exp(-(fb_X_n(:,n) - mapa_ik)' * inv(obj.fb_K) * (fb_X_n(:,n) - mapa_ik)/2);
                        mapa(i,j) = 1/sqrt((2*pi)^2*det(obj.fb_K)) * exp(-(fb_X_n(:,n) - mapa_ik)' * inv(obj.fb_K) * (fb_X_n(:,n) - mapa_ik)/2);
                        
                        % Combina a probabilidade com a priori

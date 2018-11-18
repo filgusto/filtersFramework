@@ -18,7 +18,7 @@ clc;
 %   3 - Comparacao geral de todos os obj_filters e erro absoluto de posicao
 %   4 - Filtro de particulas
 %   5 - Filtro de Bayes
-conf_plotStyle = 4;
+conf_plotStyle = 5;
 
 %% Instanciacao de objetos
 
