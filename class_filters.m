@@ -129,6 +129,7 @@ classdef class_filters
         end
         
         %% Filtro de Kalman
+        
         function [m_n, P_n] = kf(obj, m_n1, P_n1, y_n, deltaT)
             
             F_n = [1 0 deltaT 0; 0 1 0 deltaT; 0 0 1 0; 0 0 0 1];
@@ -139,7 +140,7 @@ classdef class_filters
             
             % Predicao
             m_nn1 = F_n * m_n1;
-            P_nn1 = (F_n * P_n1 * F_n.') + Q_n;
+            P_nn1 = (F_n * P_n1 * F_n.') + obj.kf_R_n; % Esta expressao precisa de revisao
             
             % Refinamento
             S_n = (obj.kf_H_n * P_nn1 * obj.kf_H_n.') + obj.kf_R_n;
