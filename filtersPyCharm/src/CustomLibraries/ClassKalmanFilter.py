@@ -64,7 +64,7 @@ class KalmanFilter:
     # ===== Method - adds noise to a reading
     def noisyReading(self, x):
 
-        return x + self.desv_z * ((np.random.rand(4)-0.5) * 2)
+        return x + self.desv_z * ((np.random.rand(2)-0.5) * 2)
 
 # ===================== For class test only
 if __name__ == '__main__':
