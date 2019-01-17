@@ -10,10 +10,10 @@ class KalmanFilter:
         # defining kalman filter parameters
 
         # standard deviation in state x
-        self.desv_x = 0.1
+        self.desv_x = 0.05
 
         # standard deviation in measurement z
-        self.desv_z = 0.3
+        self.desv_z = 0.05
 
         # measurement matrix - initiated as an identity
         self.H = np.identity(4, dtype=float)
@@ -34,37 +34,39 @@ class KalmanFilter:
                         [0, 0, 0, 1]])
 
         # C matrix assembly
-        C_t = np.array([[np.power(deltaT, 3)/3, 0, np.power(deltaT, 2)/2, 0],
-                        [0, np.power(deltaT, 3)/3, 0, np.power(deltaT, 2)/2],
-                        [np.power(deltaT, 2)/2, 0, deltaT, 0],
-                        [0, np.power(deltaT, 2)/2, 0, deltaT]])
+        C_t = np.array([[(deltaT)**3/3, 0, (deltaT**2)/2, 0],
+                        [0, (deltaT**3)/3, 0, (deltaT**2)/2],
+                        [(deltaT**2)/2, 0, deltaT, 0],
+                        [0, (deltaT**2)/2, 0, deltaT]])
 
         # 1- prediction step
 
         # system prediction
-        mu_tHat = np.dot(A_t, mu_t1)
+        mu_tHat = A_t.dot(mu_t1)
 
         # measurement prediction
-        Sig_tHat = np.linalg.multi_dot(A_t, Sig_t1, A_t.T) + self.R
-
+        Sig_tHat = A_t.dot(Sig_t1).dot(A_t.T) + self.R
 
         # 2- update step
 
-        # kalman gain
-        K = np.matmul(Sig_tHat, C_t.T, np.linalg.inv(np.matmul(C_t, Sig_tHat, C_t.T) + self.Q))
+        # kalman gain computed in two steps
+        aux_k = C_t.dot(Sig_tHat).dot(C_t.T) + self.Q
+        aux_k = aux_k.astype(float)
+        K = Sig_tHat.dot(C_t.T).dot(np.linalg.inv(aux_k))
 
         # state estimated mean
-        mu_t = mu_tHat + K * (z_t - C_t * mu_tHat)
+        mu_t = mu_tHat + K.dot((z_t.T - C_t.dot(mu_tHat.T)))
 
         # state covariance
-        Sig_t = np.matmul((np.identity(4) - np.matmul(K, C_t)), Sig_tHat)
+        Sig_t = (np.identity(4) - K.dot(C_t)).dot(Sig_tHat)
 
         return mu_t, Sig_t
 
     # ===== Method - adds noise to a reading
     def noisyReading(self, x):
 
-        return x + self.desv_z * ((np.random.rand(2)-0.5) * 2)
+        # return x + self.desv_z * ((np.random.rand(len(x))-0.5) * 2)
+        return x + self.desv_z * (np.random.rand(len(x)) - 0.5)
 
 # ===================== For class test only
 if __name__ == '__main__':

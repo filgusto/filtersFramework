@@ -21,10 +21,6 @@ if __name__ == '__main__':
     # parameter 1 indicates kf plot style
     plotHandler = SimPlot(1)
 
-    # variables arrays. Those will store the experiment history
-    robot_real_x_t = [None]
-    mu_t = [None]
-
     # helpful variables
     flag_firstRead = True
     iteration_number = 1
@@ -43,49 +39,69 @@ if __name__ == '__main__':
         simTime_actual = vrep.getsimtimelastretrival()
 
         # treating time
-        if flag_firstRead == 1:
+        if flag_firstRead == True:
 
             # saves the first timestamp
             simTime_first = simTime_actual
-            simTime_basis = [simTime_actual]
+            simTime_basis = np.array(0)
 
-            # assembling the real state vector
-            robot_real_x_t[0] = np.array([robot_position[0], robot_position[1]])
+            # saving the real robots real state vector
+            robot_real_x_t = np.array([robot_position[0], robot_position[1],
+                                          robot_velocity[0], robot_velocity[1]])
 
         else:
 
             # saves the actual time in an basis array
-            simTime_basis.extend(simTime_actual-simTime_first)
+            simTime_basis = np.vstack([simTime_basis, simTime_actual-simTime_first])
 
             # computes the latest time step
             simTime_deltaT = simTime_basis[-1] - simTime_basis[-2]
 
-            # assembling the real state vector
-            robot_real_x_t.append(np.array([robot_position[0], robot_position[1]]))
-
-        # creating a simulated noisy sensor measurement
-        z_t = kf.noisyReading(robot_real_x_t[-1])
+            # Appending the new real state
+            robot_real_x_t = np.vstack([robot_real_x_t, [robot_position[0], robot_position[1],
+                                       robot_velocity[0], robot_velocity[1]]])
 
         # initializes the kalman filter parameters
         if flag_firstRead:
 
             # the robot initial position is assumed to be known
-            mu_t[0] = robot_real_x_t[-1]
+            mu_t = robot_real_x_t
 
             # initializes the covariance matrix as a identity
             Sig_t = np.identity(4)
 
+            # disables the flag
+            flag_firstRead = False
+
         # process the filter recursively
         else:
 
-            # calls the filter method
-            aux_mu_t, Sig_t = kf.kf(mu_t, Sig_t, z_t, simTime_deltaT)
+            # creating a simulated noisy sensor measurement
+            z_t = kf.noisyReading(robot_real_x_t[-1, :])
 
-            mu_t.append(aux_mu_t)
+            # adjusts the mu_t shape for inserting it in KF
+            if iteration_number < 3:
+                aux_mu_t1 = mu_t
+            else:
+                aux_mu_t1 = mu_t[-1]
+
+            # calls the filter method
+            aux_mu_t, Sig_t = kf.kf(aux_mu_t1, Sig_t, z_t, simTime_deltaT)
+
+            # Saves the desirable variables into arrays
+            mu_t = np.vstack([mu_t, aux_mu_t])
+
+            # plotting
+            plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
+
+        # increments the counter
+        iteration_number += 1
 
         # shows the current error
-        print('-----')
-        print(mu_t)
+        # print('-----')
+        # print(iteration_number)
+        # print(robot_real_x_t[-1])
+        # print(mu_t[-1])
         # print(robot_real_x_t[-1])
 
 
