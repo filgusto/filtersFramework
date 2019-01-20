@@ -51,6 +51,7 @@ class ParticleFilter:
             # stores the computes values
             xCal_hat.append([[x_tm_hat],[w_tm]])
 
+        # PAREI AQUI
 
     # ===== Method - motionModel propagation
     def motionModel(self, x_t1, deltaT):
