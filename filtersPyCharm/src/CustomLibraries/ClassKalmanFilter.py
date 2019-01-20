@@ -25,6 +25,11 @@ class KalmanFilter:
         self.R = self.desv_z * np.identity(4, dtype=float)
 
     # ===== Method - Kalman Filter
+    # -- Input
+    #   - mu_t1: last estimation mean
+    #   - Sig_t1: last estimation covariance matrix
+    #   - z_t: measurement vector
+    #   - deltaT: time step
     def kf(self, mu_t1, Sig_t1, z_t, deltaT):
 
         # A matrix assembly
