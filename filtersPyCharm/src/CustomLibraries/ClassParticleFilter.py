@@ -85,7 +85,6 @@ class ParticleFilter:
     def gaussianEvaluate(self, z_t, z_that, R_t):
 
         # computes the gaussian with z_t as mean, R_t as the covariance matrix and z_that as the evaluated point
-        # res = (1 / np.sqrt(np.linalg.det(R_t) * ((2*np.pi)**len(z_t)))) * (np.exp( -0.5 * (z_t.T - z_that.T) * np.linalg.inv(R_t) * (z_t.T - z_that.T).T ))
         res = (1 / np.sqrt(np.linalg.det(R_t) * ((2 * np.pi) ** len(z_t)))) * (
             np.exp(-0.5 * (z_t.T - z_that.T) * np.linalg.inv(R_t) * (z_t - z_that)))
 

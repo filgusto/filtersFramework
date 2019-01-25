@@ -8,25 +8,44 @@ import time
 
 if __name__ == '__main__':
 
+    # ========== running parameters settings HERE ==========
+
+    # sim type
+    # 1 - Kalman filter
+    # 2 - Extended Kalman filter
+    # 3 - Particle filter
+    sim_type = 3
+
+    # ========== pre configurations ==========
+
     # a message to the user
     print("Main code started")
 
-    # invoking the vrep manipulator library
+    # invoking the v-rep manipulation library
     vrep = BibVrepManipulation()
-
-    # invoking the Kalman Filter library
-    kf = KalmanFilter()
 
     # invoking the plot library
     # parameter 1 indicates kf plot style
-    plotHandler = SimPlot(1)
+    plotHandler = SimPlot(sim_type)
+
+    # invoking the right filters libraries
+    if sim_type == 1:
+        kf = KalmanFilter()
+    elif sim_type == 2:
+        ekf = ExtendedKalmanFilter()
+    elif sim_type == 3:
+        pf = ParticleFilter()
 
     # helpful variables
     flag_firstRead = True
     iteration_number = 1
 
+    # ========== simulation phase ==========
+
     # The infinity loop
     while True:
+
+        # ----- arranging simulation variables -----
 
         # small pause for better computations
         time.sleep(0.05)
@@ -61,38 +80,43 @@ if __name__ == '__main__':
             robot_real_x_t = np.vstack([robot_real_x_t, [robot_position[0], robot_position[1],
                                        robot_velocity[0], robot_velocity[1]]])
 
-        # initializes the kalman filter parameters
-        if flag_firstRead:
+        # ----- Kalman filter steps -----
+        if sim_type == 1:
 
-            # the robot initial position is assumed to be known
-            mu_t = robot_real_x_t
+            # initializes the kalman filter parameters
+            if flag_firstRead:
 
-            # initializes the covariance matrix as a identity
-            Sig_t = np.identity(4)
+                # the robot initial position is assumed to be known
+                mu_t = robot_real_x_t
 
-            # disables the flag
-            flag_firstRead = False
+                # initializes the covariance matrix as a identity
+                Sig_t = np.identity(4)
 
-        # process the filter recursively
-        else:
+                # disables the flag
+                flag_firstRead = False
 
-            # creating a simulated noisy sensor measurement
-            z_t = kf.noisyReading(robot_real_x_t[-1, :])
-
-            # adjusts the mu_t shape for inserting it in KF
-            if iteration_number < 3:
-                aux_mu_t1 = mu_t
+            # process the filter recursively
             else:
-                aux_mu_t1 = mu_t[-1]
 
-            # calls the filter method
-            aux_mu_t, Sig_t = kf.kf(aux_mu_t1, Sig_t, z_t, simTime_deltaT)
+                # creating a simulated noisy sensor measurement
+                z_t = kf.noisyReading(robot_real_x_t[-1, :])
 
-            # Saves the desirable variables into arrays
-            mu_t = np.vstack([mu_t, aux_mu_t])
+                # adjusts the mu_t shape for inserting it in KF
+                if iteration_number < 3:
+                    aux_mu_t1 = mu_t
+                else:
+                    aux_mu_t1 = mu_t[-1]
 
-            # plotting
-            plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
+                # calls the filter method
+                aux_mu_t, Sig_t = kf.kf(aux_mu_t1, Sig_t, z_t, simTime_deltaT)
+
+                # Saves the desirable variables into arrays
+                mu_t = np.vstack([mu_t, aux_mu_t])
+
+                # plotting
+                plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
+
+        # ----- Extended kalman 
 
         # increments the counter
         iteration_number += 1
