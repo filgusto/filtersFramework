@@ -1,6 +1,7 @@
 # Main program to initialize the filters class
 from CustomLibraries.BibVrepMethods.BibVrepManipulation import BibVrepManipulation
 from CustomLibraries.ClassKalmanFilter import KalmanFilter
+from CustomLibraries.ClassParticleFilter import ParticleFilter
 from CustomLibraries.ClassSimPlot import SimPlot
 
 import numpy as np
@@ -15,6 +16,11 @@ if __name__ == '__main__':
     # 2 - Extended Kalman filter
     # 3 - Particle filter
     sim_type = 3
+
+    # -- parameters for the particle filter
+
+    # number of particles
+    pf_particlesNumber = 100
 
     # ========== pre configurations ==========
 
@@ -32,9 +38,10 @@ if __name__ == '__main__':
     if sim_type == 1:
         kf = KalmanFilter()
     elif sim_type == 2:
-        ekf = ExtendedKalmanFilter()
+        # ekf = ExtendedKalmanFilter()
+        pass
     elif sim_type == 3:
-        pf = ParticleFilter()
+        pf = ParticleFilter(pf_particlesNumber)
 
     # helpful variables
     flag_firstRead = True
@@ -65,8 +72,8 @@ if __name__ == '__main__':
             simTime_basis = np.array(0)
 
             # saving the real robots real state vector
-            robot_real_x_t = np.array([robot_position[0], robot_position[1],
-                                          robot_velocity[0], robot_velocity[1]])
+            robot_real_x_t = np.array([[robot_position[0]], [robot_position[1]],
+                                          [robot_velocity[0]], [robot_velocity[1]]])
 
         else:
 
@@ -116,7 +123,29 @@ if __name__ == '__main__':
                 # plotting
                 plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
 
-        # ----- Extended kalman 
+        # ----- Extended kalman steps -----
+        if sim_type == 2:
+
+            pass
+
+        # ----- Particle filter steps -----
+        if sim_type == 3:
+
+            if flag_firstRead:
+
+                # particles initialization
+                xCal = pf.particlesInitialization(robot_real_x_t)
+
+                plotHandler.pf_draw(robot_real_x_t, xCal)
+
+                dummy = input('end end end') PAREI AQUI PAREI AQUI PAREI AQUI
+
+            else:
+
+                pass
+
+
+        # ----- Post processing -----
 
         # increments the counter
         iteration_number += 1

@@ -4,16 +4,19 @@ import numpy as np
 class ParticleFilter:
 
     # class constructor
-    def __init__(self):
+    def __init__(self, M = None):
 
         # system covariance
         self.cov_x = np.array([[0.5], [0.5], [0.1], [0.1]])
 
         # measurement covariance
-        self.cov_z = np.array([0.5], [0.5], [0.2]])
+        self.cov_z = np.array([[0.5], [0.5], [0.2]])
 
-        # particles quantity
-        self.M = 1000
+        # particles default quantity
+        if M is None:
+            self.M = 1000
+        else:
+            self.M = M
 
         # initial state variance
         self.V = 3
@@ -90,7 +93,39 @@ class ParticleFilter:
 
         return res
 
+    # ===== Method - initial particles generation
+    def particlesInitialization(self, x_t_ini):
+
+        # generates the starting points from a gaussian distribution around the belief
+        xCal = x_t_ini + np.sqrt(self.V) * (np.random.rand(x_t_ini.size , self.M) - 0.5)
+
+        return xCal
+
 # for class testing purposes
 if __name__ == '__main__':
 
-    test = ParticleFilter()
+    fp = ParticleFilter()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,6 +1,6 @@
 # This class fournishes methods to plot your simulation relevant data
 import matplotlib.pyplot as plt
-plt.ion()
+plt.ion() # activating interactive plotting
 # import time
 
 class SimPlot:
@@ -14,6 +14,7 @@ class SimPlot:
         self.ax = [None]
         self.fig = [None]
         self.lines = [None]
+        self.scatters = [None]
 
         # Instantiating the correctly filter plot style
         if filterType == 1:
@@ -24,6 +25,11 @@ class SimPlot:
             self.pf_initiate()
         else:
             print('SimPlot constructed with unknown arguments.')
+
+    def __del__(self):
+
+        # plt.waitforbuttonpress()
+        pass
 
     # ===== Method - Kalman filter plot initiation
     def kf_initiate(self):
@@ -66,22 +72,6 @@ class SimPlot:
 
     def kf_draw(self, x_real, x_estimated, z_t):
 
-        # plots the received arrays
-
-        # ploting the real robot real path
-        # self.ax[0].plot(x_real[:, 0], x_real[:, 1], '-r')
-
-        # plotting the robot estimated path
-        # self.ax[0].plot(x_estimated[:, 0], x_estimated[:, 1], '-b')
-
-        # plotting the sensor reading
-        # self.ax[0].plot(z_t[0], z_t[1], marker='o', markersize='3', color='green')
-
-        # displays the plot
-        # self.fig[0].show()
-
-        # plt.pause(0.05)
-
         # updating  robot_realposition plot
         self.lines[0].set_xdata(x_real[:, 0])
         self.lines[0].set_ydata(x_real[:, 1])
@@ -103,9 +93,54 @@ class SimPlot:
 
         plt.pause(0.05)
 
+    # ===== Method - Particle filter plot initiation
+    def pf_initiate(self):
+
+        # creating the figure
+        self.fig[0] = plt.figure()
+
+        # creating the axes region
+        self.ax[0] = self.fig[0].add_subplot(1, 1, 1)
+
+        # defining some plot parameters
+        self.ax[0].set_xlim(-6, 6)
+        self.ax[0].set_ylim(-6, 6)
+        self.ax[0].set_xlabel('pos x [m]')
+        self.ax[0].set_ylabel('pos y [m]')
+        self.ax[0].set_title('Particle Filter')
+        self.ax[0].grid(True)
+
+        # creating particles plot
+        self.lines.extend(self.ax[0].plot([], [], 'xg', linewidth=0.5))
+
+        # creating robot real position line
+        self.lines[0], = self.ax[0].plot([], [], 'or')
+
+
+    def pf_draw(self, x_real, xCal):
+
+        # updating  robot_realposition plot
+        self.lines[0].set_xdata(x_real[0])
+        self.lines[0].set_ydata(x_real[1])
+
+        # plotting the particles
+        self.lines[1].set_xdata(xCal[0, :])
+        self.lines[1].set_ydata(xCal[1, :])
+
+        # updating the figure
+        self.fig[0].canvas.draw()
+        self.fig[0].canvas.flush_events()
+
+        plt.pause(0.05)
+
+
 # for class testing purposes
 if __name__ == '__main__':
 
-    test = SimPlot(1)
+    import numpy as np
 
-    a = input('Press any button to close the figure')
+    test = SimPlot(3)
+
+    test.pf_initiate()
+
+    test.pf_draw(np.array([[1],[2]]), np.array([[1, 1, 1],[2, 3, 4]]))

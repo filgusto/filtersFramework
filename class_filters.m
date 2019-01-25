@@ -358,7 +358,6 @@ classdef class_filters
             
             % Gerando as particulas iniciais baseado em uma distribuicao
             % gaussiana no entorno da priori inicial
-            x_estIni = [];
             for i=1:obj.fp_M
                 
                 % Gera uma inicializacao para cada dimensao de x_ini
