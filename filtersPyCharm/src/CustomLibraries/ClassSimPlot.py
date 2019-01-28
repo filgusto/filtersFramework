@@ -115,30 +115,36 @@ class SimPlot:
         self.lines.extend(self.ax[0].plot([], [], 'xg', linewidth=0.5))
 
         # creating robot real position line
-        self.lines[0], = self.ax[0].plot([], [], 'or')
+        self.lines[0], = self.ax[0].plot([], [], 'og')
 
 
-    def pf_draw(self, x_real, xCal):
+    def pf_draw(self, x_real, xCal, color):
 
         # corrects xCal, if it is not an numpy array
-        if type(xCal) is not np.ndarray:
-            aux_v1 = xCal[0]
-            for aux_i in range(len(xCal)-1):
-                aux_v1 = np.hstack((aux_v1, xCal[aux_i+1]))
-            xCal = aux_v1
+        if xCal is not None:
+            if type(xCal) is not np.ndarray:
+                aux_v1 = xCal[0]
+                for aux_i in range(len(xCal)-1):
+                    aux_v1 = np.hstack((aux_v1, xCal[aux_i+1]))
+                xCal = aux_v1
 
+        # updates the robot real position data
         if x_real is not None:
 
             # updating  robot_realposition plot
             self.lines[0].set_xdata(x_real[0])
             self.lines[0].set_ydata(x_real[1])
 
-
+        # updates the particles data
         if xCal is not None:
 
             # plotting the particles
             self.lines[1].set_xdata(xCal[0, :])
             self.lines[1].set_ydata(xCal[1, :])
+
+        # updates the color
+        if color is not None:
+            self.lines[1].set_color(color)
 
         # updating the figure
         self.fig[0].canvas.draw()

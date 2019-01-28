@@ -7,10 +7,10 @@ class ParticleFilter:
     def __init__(self, M = None):
 
         # system covariance
-        self.cov_x = np.array([[0.1], [0.1], [0.03], [0.03]])
+        self.cov_x = np.array([[0.03], [0.03], [0.005], [0.005]])
 
         # measurement covariance
-        self.cov_z = np.array([[0.1], [0.1], [0.1]])
+        self.cov_z = np.array([[0.05], [0.05], [0.05]])
 
         # particles default quantity
         if M is None:
@@ -19,7 +19,7 @@ class ParticleFilter:
             self.M = M
 
         # initial state variance
-        self.V = 5
+        self.V = 10
 
         # system measurement covariance matrix
         self.R_t = np.array([[self.cov_z[0][0], 0.0, 0.0],
@@ -67,12 +67,12 @@ class ParticleFilter:
         xCal_w_hat = [aux / aux_weightssum for aux in xCal_w_hat]
 
         # espalha as particulas
-        plotHandler.pf_draw(None, xCal_x_hat)
+        plotHandler.pf_draw(None, xCal_x_hat, 'red')
 
         # resample with the low variance method
         xCal_t =  self.lowVarianceResampler(xCal_x_hat, xCal_w_hat)
 
-        plotHandler.pf_draw(None, xCal_t)
+        plotHandler.pf_draw(None, xCal_t, 'blue')
 
         # returns the new particles data set
         return xCal_t

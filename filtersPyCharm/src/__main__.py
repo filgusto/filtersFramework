@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # -- parameters for the particle filter
 
     # number of particles
-    pf_particlesNumber = 200
+    pf_particlesNumber = 500
 
     # ========== pre configurations ==========
 
@@ -136,6 +136,9 @@ if __name__ == '__main__':
                 # particles initialization
                 xCal = pf.particlesInitialization(robot_real_x_t)
 
+                # plots the initial particle set
+                plotHandler.pf_draw(robot_real_x_t, xCal, 'black')
+
                 # disables the flag
                 flag_firstRead = False
 
@@ -147,8 +150,8 @@ if __name__ == '__main__':
                 # invokes iterativelly the particle filter algorithm
                 xCal = pf.pf(xCal, z_t, simTime_deltaT, plotHandler)
 
-                # plot of the results
-                # plotHandler.pf_draw(robot_real_x_t, xCal)
+                # plot of the robot real position
+                plotHandler.pf_draw(robot_real_x_t, None, None)
 
         # ----- Post processing -----
 
