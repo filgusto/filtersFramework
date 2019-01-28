@@ -7,10 +7,10 @@ class ParticleFilter:
     def __init__(self, M = None):
 
         # system covariance
-        self.cov_x = np.array([[0.5], [0.5], [0.1], [0.1]])
+        self.cov_x = np.array([[0.1], [0.1], [0.03], [0.03]])
 
         # measurement covariance
-        self.cov_z = np.array([[0.5], [0.5], [0.2]])
+        self.cov_z = np.array([[0.1], [0.1], [0.1]])
 
         # particles default quantity
         if M is None:
@@ -19,7 +19,7 @@ class ParticleFilter:
             self.M = M
 
         # initial state variance
-        self.V = 3
+        self.V = 5
 
         # system measurement covariance matrix
         self.R_t = np.array([[self.cov_z[0][0], 0.0, 0.0],
@@ -33,14 +33,18 @@ class ParticleFilter:
     #   - z_n: measurement vector
     #   - deltaT: time step
     #   - resampleMethod: resampling method 1- normal 2- small covariance
-    def pf(self, xCal_t1, z_t, deltaT):
+    def pf(self, xCal_t1, z_t, deltaT, plotHandler):
 
         # starts the new particles set
         xCal_hat = []
-        xCal_t = []
+        xCal_x_hat = []
+        xCal_w_hat = []
+
+        # the weights accumulator
+        aux_weightssum = 0
 
         # prediction phas
-        for m in range(self.M - 1):
+        for m in range(self.M):
 
             # extracting the particle from the set
             x_tm1 = xCal_t1[:, m]
@@ -51,14 +55,71 @@ class ParticleFilter:
             # computes the estimated measurement given the particle
             z_tm_hat = self.measurementModel(x_tm_hat)
 
-            # computes the particle weight based on both real and estimated measurements using a gaussian pdf evaluationo
+            # computes the particle weight based on both real and estimated measurements using a gaussian pdf eval
             w_tm = self.gaussianEvaluate(z_t, z_tm_hat, self.R_t)
 
             # stores the computed values
-            xCal_hat.append([x_tm_hat, w_tm])
+            xCal_x_hat.append(x_tm_hat)
+            xCal_w_hat.append(w_tm)
 
-        # PAREI AQUI
-        pass
+        # normalizes the particles weights
+        aux_weightssum = sum(xCal_w_hat)
+        xCal_w_hat = [aux / aux_weightssum for aux in xCal_w_hat]
+
+        # espalha as particulas
+        plotHandler.pf_draw(None, xCal_x_hat)
+
+        # resample with the low variance method
+        xCal_t =  self.lowVarianceResampler(xCal_x_hat, xCal_w_hat)
+
+        plotHandler.pf_draw(None, xCal_t)
+
+        # returns the new particles data set
+        return xCal_t
+
+    # ===== Method - Low variance resampler
+    def lowVarianceResampler(self, x_hat, w_hat):
+
+        # m^-1 variable
+        inv_M = 1 / len(w_hat)
+
+        # draw a random number
+        r = np.random.uniform(0, inv_M)
+
+        # receives the first particle weight
+        c = w_hat[0]
+
+        # auxiliary variable
+        i = 0
+
+        # iterates M times, for keeeping the particles number
+        for m in range(len(w_hat)):
+
+            # computes U
+            # it is not (m -1) because m, in python programmin, begins by 0, not 1.
+            U = r + m * inv_M
+
+            while c < U:
+
+                # increases i
+                i += 1
+
+                # tests if the maximum number of indexes is reached
+                if i >= len(w_hat):
+                    i = 0           # returns to the first particle
+
+                # sums the next particle weight
+                c = c + w_hat[i]
+
+            # adds the chosen particle to the set
+            if m == 0:
+                xCal_t = np.array(x_hat[i])
+            else:
+                xCal_t = np.hstack((xCal_t, x_hat[i]))
+
+        # returns the new particles set
+        return xCal_t
+
 
     # ===== Method - motionModel propagation
     def motionModel(self, x_t1, deltaT):

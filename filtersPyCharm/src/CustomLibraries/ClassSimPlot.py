@@ -1,5 +1,6 @@
 # This class fournishes methods to plot your simulation relevant data
 import matplotlib.pyplot as plt
+import numpy as np
 plt.ion() # activating interactive plotting
 # import time
 
@@ -119,13 +120,25 @@ class SimPlot:
 
     def pf_draw(self, x_real, xCal):
 
-        # updating  robot_realposition plot
-        self.lines[0].set_xdata(x_real[0])
-        self.lines[0].set_ydata(x_real[1])
+        # corrects xCal, if it is not an numpy array
+        if type(xCal) is not np.ndarray:
+            aux_v1 = xCal[0]
+            for aux_i in range(len(xCal)-1):
+                aux_v1 = np.hstack((aux_v1, xCal[aux_i+1]))
+            xCal = aux_v1
 
-        # plotting the particles
-        self.lines[1].set_xdata(xCal[0, :])
-        self.lines[1].set_ydata(xCal[1, :])
+        if x_real is not None:
+
+            # updating  robot_realposition plot
+            self.lines[0].set_xdata(x_real[0])
+            self.lines[0].set_ydata(x_real[1])
+
+
+        if xCal is not None:
+
+            # plotting the particles
+            self.lines[1].set_xdata(xCal[0, :])
+            self.lines[1].set_ydata(xCal[1, :])
 
         # updating the figure
         self.fig[0].canvas.draw()

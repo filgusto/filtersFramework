@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # -- parameters for the particle filter
 
     # number of particles
-    pf_particlesNumber = 100
+    pf_particlesNumber = 200
 
     # ========== pre configurations ==========
 
@@ -145,10 +145,10 @@ if __name__ == '__main__':
                 z_t = pf.noisyReading(robot_real_x_t[:, -1])
 
                 # invokes iterativelly the particle filter algorithm
-                xCal = pf.pf(xCal, z_t, simTime_deltaT)
+                xCal = pf.pf(xCal, z_t, simTime_deltaT, plotHandler)
 
                 # plot of the results
-                plotHandler.pf_draw(robot_real_x_t, xCal)
+                # plotHandler.pf_draw(robot_real_x_t, xCal)
 
         # ----- Post processing -----
 
