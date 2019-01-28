@@ -84,8 +84,8 @@ if __name__ == '__main__':
             simTime_deltaT = simTime_basis[-1] - simTime_basis[-2]
 
             # Appending the new real state
-            robot_real_x_t = np.vstack([robot_real_x_t, [robot_position[0], robot_position[1],
-                                       robot_velocity[0], robot_velocity[1]]])
+            robot_real_x_t = np.hstack((robot_real_x_t, np.array([[robot_position[0]], [robot_position[1]],
+                                       [robot_velocity[0]], [robot_velocity[1]]])))
 
         # ----- Kalman filter steps -----
         if sim_type == 1:
@@ -136,14 +136,19 @@ if __name__ == '__main__':
                 # particles initialization
                 xCal = pf.particlesInitialization(robot_real_x_t)
 
-                plotHandler.pf_draw(robot_real_x_t, xCal)
-
-                dummy = input('end end end') PAREI AQUI PAREI AQUI PAREI AQUI
+                # disables the flag
+                flag_firstRead = False
 
             else:
 
-                pass
+                # creates a noisy reading
+                z_t = pf.noisyReading(robot_real_x_t[:, -1])
 
+                # invokes iterativelly the particle filter algorithm
+                xCal = pf.pf(xCal, z_t, simTime_deltaT)
+
+                # plot of the results
+                plotHandler.pf_draw(robot_real_x_t, xCal)
 
         # ----- Post processing -----
 
