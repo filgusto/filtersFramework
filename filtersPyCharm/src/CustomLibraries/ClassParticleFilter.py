@@ -142,6 +142,11 @@ class ParticleFilter:
     # ===== Method - measurementModel
     def measurementModel(self, x):
 
+        # avoids zero division
+        if x[0] == 0 and x[1] == 0:
+            x[0] = 0.00000001
+            x[1] = 0.00000001
+
         # computes z_t considering x_t
         z = np.array([np.sqrt(x[0] ** 2 + x[1] ** 2),
                       (x[0] * x[2] + x[1] * x[3]) / (np.sqrt(x[0] ** 2 + x[1] ** 2)),
