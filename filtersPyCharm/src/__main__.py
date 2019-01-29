@@ -2,6 +2,7 @@
 from CustomLibraries.BibVrepMethods.BibVrepManipulation import BibVrepManipulation
 from CustomLibraries.ClassKalmanFilter import KalmanFilter
 from CustomLibraries.ClassParticleFilter import ParticleFilter
+from CustomLibraries.ClassRNA import NeuralNetwork
 from CustomLibraries.ClassSimPlot import SimPlot
 
 import numpy as np
@@ -15,7 +16,8 @@ if __name__ == '__main__':
     # 1 - Kalman filter
     # 2 - Extended Kalman filter
     # 3 - Particle filter
-    sim_type = 3
+    # 4 - RNA
+    sim_type = 4
 
     # -- parameters for the particle filter
 
@@ -42,6 +44,8 @@ if __name__ == '__main__':
         pass
     elif sim_type == 3:
         pf = ParticleFilter(pf_particlesNumber)
+    elif sim_type == 4:
+        rna = NeuralNetwork(100, 0)
 
     # helpful variables
     flag_firstRead = True
@@ -124,12 +128,12 @@ if __name__ == '__main__':
                 plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
 
         # ----- Extended kalman steps -----
-        if sim_type == 2:
+        elif sim_type == 2:
 
             pass
 
         # ----- Particle filter steps -----
-        if sim_type == 3:
+        elif sim_type == 3:
 
             if flag_firstRead:
 
@@ -152,6 +156,23 @@ if __name__ == '__main__':
 
                 # plot of the robot real position
                 plotHandler.pf_draw(robot_real_x_t, None, None)
+
+        # ----- RNA steps
+        elif sim_type == 4:
+
+            if flag_firstRead:
+
+                # disables the first read flag
+                flag_firstRead = False
+
+            else:
+
+                # generating a noisy sensor reading
+                z_t = rna.noisyReading(robot_real_x_t[:, -1])
+
+                rna.train(z_t, robot_real_x_t[:, -1])
+
+                x_estimated = rna.predict(z_t)
 
         # ----- Post processing -----
 
