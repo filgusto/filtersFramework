@@ -21,7 +21,7 @@ class SimPlot:
         if filterType == 1:
             self.kf_initiate()
         elif filterType == 2:
-            self.ekf_initiate()
+            self.kf_initiate()
         elif filterType == 3:
             self.pf_initiate()
         else:

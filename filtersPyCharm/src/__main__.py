@@ -2,6 +2,7 @@
 from CustomLibraries.BibVrepMethods.BibVrepManipulation import BibVrepManipulation
 from CustomLibraries.ClassKalmanFilter import KalmanFilter
 from CustomLibraries.ClassParticleFilter import ParticleFilter
+from CustomLibraries.ClassExtendedKalmanFilter import ExtendedKalmanFilter
 from CustomLibraries.ClassSimPlot import SimPlot
 
 import numpy as np
@@ -15,7 +16,7 @@ if __name__ == '__main__':
     # 1 - Kalman filter
     # 2 - Extended Kalman filter
     # 3 - Particle filter
-    sim_type = 3
+    sim_type = 2
 
     # -- parameters for the particle filter
 
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     if sim_type == 1:
         kf = KalmanFilter()
     elif sim_type == 2:
-        # ekf = ExtendedKalmanFilter()
+        ekf = ExtendedKalmanFilter()
         pass
     elif sim_type == 3:
         pf = ParticleFilter(pf_particlesNumber)
@@ -123,13 +124,42 @@ if __name__ == '__main__':
                 # plotting
                 plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
 
-        # ----- Extended kalman steps -----
-        if sim_type == 2:
+        # ----- Extended Kalman Filter steps -----
+        elif sim_type == 2:
 
-            pass
+            if flag_firstRead:
+
+                # the robot initial position is assumed to be known
+                mu_t = robot_real_x_t
+
+                # initializes the covariance matrix as a identity
+                Sig_t = np.identity(4)
+
+                # disables the flag
+                flag_firstRead = False
+
+            else:
+
+                # creating a simulated noisy sensor measurement
+                z_t = ekf.noisyReading(robot_real_x_t[:, -1])
+
+                # adjusts the mu_t shape for inserting it in KF
+                if iteration_number < 3:
+                    aux_mu_t1 = mu_t
+                else:
+                    aux_mu_t1 = mu_t[-1]
+
+                # calls the filter method
+                aux_mu_t, Sig_t = ekf.ekf(aux_mu_t1, Sig_t, z_t, simTime_deltaT)
+
+                # Saves the desirable variables into arrays
+                mu_t = np.vstack([mu_t, aux_mu_t])
+
+                # plotting - using kf drawing
+                plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
 
         # ----- Particle filter steps -----
-        if sim_type == 3:
+        elif sim_type == 3:
 
             if flag_firstRead:
 
