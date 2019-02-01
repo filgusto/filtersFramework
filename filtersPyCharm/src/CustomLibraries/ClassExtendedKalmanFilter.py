@@ -6,7 +6,7 @@ class ExtendedKalmanFilter:
     def __init__(self):
 
         # measurement covariance
-        self.cov_z = np.array([[0.05], [0.05], [0.05]])
+        self.cov_z = np.array([[0.1], [0.1], [0.1]])
 
         # system measurement covariance matrix
         self.Q_t = np.array([[self.cov_z[0][0], 0.0, 0.0],
@@ -35,18 +35,17 @@ class ExtendedKalmanFilter:
 
         # update step
         mu_t = mu_t1 + K_t.dot(z_t - self.measurementModel(m_that))
-        # Sig_t = (np.e)
+        Sig_t = (np.identity(4) - K_t.dot(H_t)).dot(Sig_that)
 
-
-
+        return mu_t, Sig_t
 
     # ===== Method: Computation of prediction covariance Matrix
     def matrix_Q(self, deltaT):
 
         # assembling the matrix
-        Q_n = np.array([[deltaT**3/3, 0, deltaT**2/2, 0]
-                        [0, deltaT**3/3, 0, deltaT**2/2]
-                        [deltaT**2/2, 0, deltaT, 0]
+        Q_n = np.array([[deltaT**3/3, 0, deltaT**2/2, 0],
+                        [0, deltaT**3/3, 0, deltaT**2/2],
+                        [deltaT**2/2, 0, deltaT, 0],
                         [0, deltaT**2, 0, deltaT]])
 
         return Q_n
@@ -81,9 +80,9 @@ class ExtendedKalmanFilter:
         h32 =  x / (x**2 + y**2)
 
         # assembling H matrix
-        H_t = np.array([[h11, h12, 0, 0],
-                        [h21, h22, h23, h24]
-                        [h31, h32, 0, 0 ]])
+        H_t = np.array([[h11[0], h12[0], 0, 0],
+                        [h21[0], h22[0], h23[0], h24[0]],
+                        [h31[0], h32[0], 0, 0]])
 
         return H_t
 
@@ -107,8 +106,8 @@ class ExtendedKalmanFilter:
         # computes p(x_t | x_t1, u)
         x_that = np.array([x_t1[0] + x_t1[2] * deltaT,
                                x_t1[1] + x_t1[3] * deltaT,
-                               [x_t1[2]],
-                               [x_t1[3]]])
+                               [x_t1[2][0]],
+                               [x_t1[3][0]]])
 
         return x_that
 

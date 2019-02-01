@@ -60,7 +60,7 @@ class KalmanFilter:
         K = Sig_tHat.dot(C_t.T).dot(np.linalg.inv(aux_k))
 
         # state estimated mean
-        mu_t = mu_tHat + K.dot((z_t.T - C_t.dot(mu_tHat.T)))
+        mu_t = mu_tHat + K.dot((z_t - C_t.dot(mu_tHat)))
 
         # state covariance
         Sig_t = (np.identity(4) - K.dot(C_t)).dot(Sig_tHat)

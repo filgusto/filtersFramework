@@ -21,7 +21,7 @@ class SimPlot:
         if filterType == 1:
             self.kf_initiate()
         elif filterType == 2:
-            self.kf_initiate()
+            self.ekf_initiate()
         elif filterType == 3:
             self.pf_initiate()
         else:
@@ -74,16 +74,61 @@ class SimPlot:
     def kf_draw(self, x_real, x_estimated, z_t):
 
         # updating  robot_realposition plot
-        self.lines[0].set_xdata(x_real[:, 0])
-        self.lines[0].set_ydata(x_real[:, 1])
+        self.lines[0].set_xdata(x_real[0, :])
+        self.lines[0].set_ydata(x_real[1, :])
 
         # updating reading plot
         self.lines[1].set_xdata(z_t[0])
         self.lines[1].set_ydata(z_t[1])
 
         # updating estimation plot
-        self.lines[2].set_xdata(x_estimated[:, 0])
-        self.lines[2].set_ydata(x_estimated[:, 1])
+        self.lines[2].set_xdata(x_estimated[0, :])
+        self.lines[2].set_ydata(x_estimated[1, :])
+
+        # self.ax[0].relim()
+        # self.ax[0].autoscale_view()
+
+        # updating the figure
+        self.fig[0].canvas.draw()
+        self.fig[0].canvas.flush_events()
+
+        plt.pause(0.05)
+
+    # ===== Method - Extended Kalman filter plot initiation
+    def ekf_initiate(self):
+
+        # creating the figure
+        self.fig[0] = plt.figure()
+
+        # creating the axes region
+        self.ax[0] = self.fig[0].add_subplot(1, 1, 1)
+
+        # defining some plot parameters
+        self.ax[0].set_xlim(-6, 6)
+        self.ax[0].set_ylim(-6, 6)
+        self.ax[0].set_xlabel('pos x [m]')
+        self.ax[0].set_ylabel('pos y [m]')
+        self.ax[0].set_title('Extended Kalman Filter')
+        self.ax[0].grid(True)
+
+        # creating robot real position line
+        self.lines[0], = self.ax[0].plot([], [], '--r')
+
+        # creating measurement plot line
+        self.lines.extend(self.ax[0].plot([], [], 'og'))
+
+        # creating estimated plot line
+        self.lines.extend(self.ax[0].plot([], [], '-b'))
+
+    def ekf_draw(self, x_real, x_estimated):
+
+        # updating  robot_realposition plot
+        self.lines[0].set_xdata(x_real[0, :])
+        self.lines[0].set_ydata(x_real[1, :])
+
+        # updating estimation plot
+        self.lines[2].set_xdata(x_estimated[0, :])
+        self.lines[2].set_ydata(x_estimated[1, :])
 
         # self.ax[0].relim()
         # self.ax[0].autoscale_view()

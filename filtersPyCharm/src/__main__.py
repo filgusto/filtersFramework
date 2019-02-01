@@ -82,7 +82,7 @@ if __name__ == '__main__':
             simTime_basis = np.vstack([simTime_basis, simTime_actual-simTime_first])
 
             # computes the latest time step
-            simTime_deltaT = simTime_basis[-1] - simTime_basis[-2]
+            simTime_deltaT = (simTime_basis[-1] - simTime_basis[-2])[0]
 
             # Appending the new real state
             robot_real_x_t = np.hstack((robot_real_x_t, np.array([[robot_position[0]], [robot_position[1]],
@@ -107,7 +107,7 @@ if __name__ == '__main__':
             else:
 
                 # creating a simulated noisy sensor measurement
-                z_t = kf.noisyReading(robot_real_x_t[-1, :])
+                z_t = kf.noisyReading(robot_real_x_t[:, -1])
 
                 # adjusts the mu_t shape for inserting it in KF
                 if iteration_number < 3:
@@ -119,7 +119,7 @@ if __name__ == '__main__':
                 aux_mu_t, Sig_t = kf.kf(aux_mu_t1, Sig_t, z_t, simTime_deltaT)
 
                 # Saves the desirable variables into arrays
-                mu_t = np.vstack([mu_t, aux_mu_t])
+                mu_t = np.hstack([mu_t, aux_mu_t])
 
                 # plotting
                 plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
@@ -144,19 +144,16 @@ if __name__ == '__main__':
                 z_t = ekf.noisyReading(robot_real_x_t[:, -1])
 
                 # adjusts the mu_t shape for inserting it in KF
-                if iteration_number < 3:
-                    aux_mu_t1 = mu_t
-                else:
-                    aux_mu_t1 = mu_t[-1]
+                aux_mu_t1 = mu_t[:, -1].reshape(4, 1)
 
                 # calls the filter method
                 aux_mu_t, Sig_t = ekf.ekf(aux_mu_t1, Sig_t, z_t, simTime_deltaT)
 
                 # Saves the desirable variables into arrays
-                mu_t = np.vstack([mu_t, aux_mu_t])
+                mu_t = np.hstack([mu_t, aux_mu_t])
 
                 # plotting - using kf drawing
-                plotHandler.kf_draw(robot_real_x_t, mu_t, z_t)
+                plotHandler.ekf_draw(robot_real_x_t, mu_t)
 
         # ----- Particle filter steps -----
         elif sim_type == 3:
